@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.HashMap;
 
-@Service
-@RequiredArgsConstructor
+//@Service
+//@RequiredArgsConstructor
 public class Palm2Service {
 
     @Value("${google.api-key}")

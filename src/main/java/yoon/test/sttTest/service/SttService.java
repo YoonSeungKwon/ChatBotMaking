@@ -1,80 +1,56 @@
 package yoon.test.sttTest.service;
 
+import com.google.cloud.speech.v1.*;
+import com.google.protobuf.ByteString;
 import lombok.RequiredArgsConstructor;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class SttService {
 
-    @Value("${naver.client-id}")
-    private String CLIENT_ID;
-    @Value("${naver.secret}")
-    private String SECRET;
+    public String stt(String gcs){
 
-    private JSONParser jsonParser = new JSONParser();
-    public String stt(String path) throws ParseException {
+        String message = "";
 
-        String result = "";
+        // Instantiates a client
+        try (SpeechClient speechClient = SpeechClient.create()) {
+            Path path = Paths.get(gcs);
+            byte[] data = Files.readAllBytes(path);
+            ByteString audioBytes = ByteString.copyFrom(data);
 
-        try {
-            File voiceFile = new File(path);
+            // The path to the audio file to transcribe
 
-            String language = "Eng";        // 언어 코드 ( Kor, Jpn, Eng, Chn )
-            String apiURL = "https://naveropenapi.apigw.ntruss.com/recog/v1/stt?lang=" + language;
-            URL url = new URL(apiURL);
+            // Builds the sync recognize request
+            RecognitionConfig config =
+                    RecognitionConfig.newBuilder()
+                            .setEncoding(RecognitionConfig.AudioEncoding.FLAC)
+                            .setSampleRateHertz(16000)
+                            .setLanguageCode("ko-KR")
+                            .build();
+            RecognitionAudio audio = RecognitionAudio.newBuilder().setContent(audioBytes).build();
 
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-            conn.setUseCaches(false);
-            conn.setDoOutput(true);
-            conn.setDoInput(true);
-            conn.setRequestProperty("Content-Type", "application/octet-stream");
-            conn.setRequestProperty("X-NCP-APIGW-API-KEY-ID", CLIENT_ID);
-            conn.setRequestProperty("X-NCP-APIGW-API-KEY", SECRET);
+            // Performs speech recognition on the audio file
+            RecognizeResponse response = speechClient.recognize(config, audio);
+            List<SpeechRecognitionResult> results = response.getResultsList();
 
-            OutputStream outputStream = conn.getOutputStream();
-            FileInputStream inputStream = new FileInputStream(voiceFile);
-            byte[] buffer = new byte[4096];
-            int bytesRead = -1;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
+            for (SpeechRecognitionResult result : results) {
+                // There can be several alternative transcripts for a given chunk of speech. Just use the
+                // first (most likely) one here.
+                SpeechRecognitionAlternative alternative = result.getAlternativesList().get(0);
+                System.out.printf("Transcription: %s%n", alternative.getTranscript());
+                message = alternative.getTranscript();
             }
-            outputStream.flush();
-            inputStream.close();
-            BufferedReader br = null;
-            int responseCode = conn.getResponseCode();
-            if(responseCode == 200) { // 정상 호출
-                br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            } else {  // 오류 발생
-                System.out.println("error!!!!!!! responseCode= " + responseCode);
-                br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            }
-            String inputLine;
-
-            if(br != null) {
-                StringBuffer response = new StringBuffer();
-                while ((inputLine = br.readLine()) != null) {
-                    response.append(inputLine);
-                }
-                br.close();
-                result = response.toString();
-            } else {
-                result = "error";
-            }
-        } catch (Exception e) {
-            System.out.println(e);
+        } catch (Exception e){
+            message = "error!" + e.getMessage();
         }
 
-        JSONObject jsonObject = (JSONObject) jsonParser.parse(result);
-        return (String)jsonObject.get("text");
+        return message;
     }
-
 }
