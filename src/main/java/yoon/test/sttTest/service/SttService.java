@@ -30,9 +30,9 @@ public class SttService {
             // Builds the sync recognize request
             RecognitionConfig config =
                     RecognitionConfig.newBuilder()
-                            .setEncoding(RecognitionConfig.AudioEncoding.FLAC)
-                            .setSampleRateHertz(16000)
-                            .setLanguageCode("ko-KR")
+//                            .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
+                            .setLanguageCode("en-US")
+                            .setAudioChannelCount(2)
                             .build();
             RecognitionAudio audio = RecognitionAudio.newBuilder().setContent(audioBytes).build();
 

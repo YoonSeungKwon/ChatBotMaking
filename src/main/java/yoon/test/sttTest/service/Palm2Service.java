@@ -12,13 +12,12 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.HashMap;
 
-//@Service
-//@RequiredArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class Palm2Service {
 
-    @Value("${google.api-key}")
+    @Value("${google.api-Key}")
     private String key;
-
     public String palm2(String text) throws IOException {
         HashMap<String, String> headers = new HashMap<>();
         headers.put("x-goog-api-key", key);

@@ -17,11 +17,12 @@ import java.io.IOException;
 public class MainController {
 
     private final SttService sttService;
-
+    private final Palm2Service palm2Service;
     @GetMapping("/")
     public ResponseEntity<?> stt() throws ParseException, IOException {
-        String result = sttService.stt("src/main/resources/static/test.mp3");
-        return ResponseEntity.ok(result);
+        String result1 = sttService.stt("C:\\Users\\user\\Desktop\\audioSample.wav");
+        String result2 = palm2Service.palm2(result1);
+        return ResponseEntity.ok(result1 + ":" + result2);
     }
 
 }
